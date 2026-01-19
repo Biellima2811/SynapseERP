@@ -262,60 +262,67 @@ class AddOSPopup(ttk.Toplevel):
 class EditOSPopup(ttk.Toplevel):
     def __init__(self, parent, on_confirm, id_os):
         super().__init__(parent)
-        self.geometry('850x700')
+        self.title(f"Gerenciar OS #{id_os} - SynapseERP")
+        self.geometry("900x750") # Aumentei um pouco
         self.on_confirm = on_confirm
         self.id_os = id_os
-
+        
         self.position_center()
+        self.dados = OSModel.buscar_por_id(id_os)
 
-        # Buscar dados atuais
-        self.dados = OSModel.buscar_pod_id(id_os)
-        # Estrutura do DB: id(0), cliente_id(1), nome(2), equip(3), defeito(4), obs(5), tec(6), prio(7), status(8), valor(9), data(10), laudo(11)
+        # --- SISTEMA DE ABAS (TABS) ---
+        # Agora dividimos a tela em "Edição" e "Histórico"
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(fill=BOTH, expand=YES, padx=10, pady=10)
 
-        frame = ttk.Frame(self, padding=20)
-        frame.pack(fill=BOTH, expand=YES)
+        # Aba 1: Detalhes (Onde edita)
+        self.tab_detalhes = ttk.Frame(self.tabs, padding=20)
+        self.tabs.add(self.tab_detalhes, text="📝 Detalhes & Edição")
+
+        # Aba 2: Histórico (Onde vê os protocolos)
+        self.tab_historico = ttk.Frame(self.tabs, padding=20)
+        self.tabs.add(self.tab_historico, text="🕒 Histórico de Alterações")
+
+        # --- CONSTRUÇÃO DA ABA DETALHES ---
+        self.construir_aba_detalhes()
+        
+        # --- CONSTRUÇÃO DA ABA HISTÓRICO ---
+        self.construir_aba_historico()
+
+    def construir_aba_detalhes(self):
+        frame = self.tab_detalhes
         frame.columnconfigure(0, weight=1)
         frame.columnconfigure(1, weight=1)
-        
-        # Cabeçalho Informativo (Não editável para segurança)
-        info_frame = ttk.Labelframe(frame, text='Dados do Equipamento', padding=10, bootstyle='info')
-        info_frame.grid(row=0, columnspan=2, sticky=EW, pady=(0,20))
 
+        # Cabeçalho Informativo
+        info_frame = ttk.Labelframe(frame, text="Dados do Equipamento", padding=10, bootstyle="info")
+        info_frame.grid(row=0, columnspan=2, sticky=EW, pady=(0, 20))
+        
         ttk.Label(info_frame, text=f"Cliente: {self.dados[2]}", font=("Calibri", 12, "bold")).pack(anchor=W)
         ttk.Label(info_frame, text=f"Equipamento: {self.dados[3]} | Prioridade: {self.dados[7]}", font=("Calibri", 11)).pack(anchor=W)
-        ttk.Label(info_frame, text=f"Data Entrada: {self.dados[10]}", font=("Arial", 9), bootstyle="secondary").pack(anchor=W)
-
-        # --- CAMPOS EDITÁVEIS ---
         
-        # Defeito (Caso precise ajustar)
-        ttk.Label(frame, text='Defeito Relatado').grid(row=1, column=2, sticky=W)
+        # Campos Editáveis
+        ttk.Label(frame, text="Defeito Relatado").grid(row=1, columnspan=2, sticky=W)
         self.entry_defeito = ttk.Entry(frame)
-        self.entry_defeito.insert(0, self.dados[4] or '')
-        self.entry_defeito.grid(row=2, column=2, sticky=EW, pady=(0,10))
+        self.entry_defeito.insert(0, self.dados[4] or "")
+        self.entry_defeito.grid(row=2, columnspan=2, sticky=EW, pady=(0, 10))
 
-        # Técnico e Status (Lado a Lado)
-        ttk.Label(frame, text='Técnico Responsavel').grid(row=3, column=0, sticky=W)
+        ttk.Label(frame, text="Técnico Responsável").grid(row=3, column=0, sticky=W)
         self.entry_tec = ttk.Entry(frame)
-        self.entry_tec.insert(0, self.dados[6] or '')
-        self.entry_tec.grid(row=4, column=0, sticky=EW, padx=(0,5), pady=(0,10))
+        self.entry_tec.insert(0, self.dados[6] or "")
+        self.entry_tec.grid(row=4, column=0, sticky=EW, padx=(0, 5), pady=(0, 10))
 
-        ttk.Label(frame, text='Status Atual').grid(row=3, column=1, sticky=W)
-        self.cbo_status =  ttk.Combobox(frame, values=["Aberto", 
-                                                       "Em Análise", 
-                                                       "Aguardando Peça", 
-                                                       "Concluído", 
-                                                       "Cancelado"], state='readonly')
-        self.cbo_status.grid(row=4, column=1, sticky=EW, padx=5, pady=(0,10))
+        ttk.Label(frame, text="Status Atual").grid(row=3, column=1, sticky=W)
+        self.cbo_status = ttk.Combobox(frame, values=["Aberto", "Em Análise", "Aguardando Peça", "Concluído", "Cancelado"], state="readonly")
+        self.cbo_status.set(self.dados[8] or "Aberto")
+        self.cbo_status.grid(row=4, column=1, sticky=EW, padx=5, pady=(0, 10))
 
-        # LAUDO TÉCNICO (O campo mais importante)
-        ttk.Label(frame, text="Laudo Técnico / Serviço Realizado (Obrigatório p/ Concluir)", bootstyle="success").grid(row=5, sticky=W)
+        ttk.Label(frame, text="Laudo Técnico (Obrigatório p/ Concluir)", bootstyle="success").grid(row=5, sticky=W)
         self.txt_laudo = ttk.Text(frame, height=5)
-        # Tenta pegar o laudo (índice 11). Se não existir (banco antigo), usa vazio.
         laudo_atual = self.dados[11] if len(self.dados) > 11 else ""
         self.txt_laudo.insert("1.0", laudo_atual or "")
         self.txt_laudo.grid(row=6, columnspan=2, sticky=EW, pady=(0, 15))
 
-        # Obs e Valor
         ttk.Label(frame, text="Observações Internas").grid(row=7, column=0, sticky=W)
         self.entry_obs = ttk.Entry(frame)
         self.entry_obs.insert(0, self.dados[5] or "")
@@ -326,28 +333,48 @@ class EditOSPopup(ttk.Toplevel):
         self.entry_valor.insert(0, f"{self.dados[9]:.2f}")
         self.entry_valor.grid(row=8, column=1, sticky=EW, padx=5)
 
-        # Botão Atualizar
         ttk.Button(frame, text="SALVAR ALTERAÇÕES", bootstyle="primary", command=self.atualizar).grid(row=9, columnspan=2, sticky=EW, pady=30)
 
+    def construir_aba_historico(self):
+        # Busca o histórico do banco
+        historico = OSModel.buscar_historico(self.id_os)
+        
+        if not historico:
+            ttk.Label(self.tab_historico, text="Nenhum registro de alteração encontrado.").pack(pady=20)
+            return
+
+        # Cria uma linha do tempo (Timeline)
+        timeline_frame = ttk.Frame(self.tab_historico)
+        timeline_frame.pack(fill=BOTH, expand=YES)
+
+        # Cabeçalho da tabela de histórico
+        cols = ["Data/Hora", "Usuário", "Ação Realizada"]
+        tree_hist = ttk.Treeview(timeline_frame, columns=cols, show="headings", height=10, bootstyle="secondary")
+        
+        tree_hist.column("Data/Hora", width=150, anchor=CENTER)
+        tree_hist.column("Usuário", width=100, anchor=CENTER)
+        tree_hist.column("Ação Realizada", width=400, anchor=W)
+        
+        for c in cols: tree_hist.heading(c, text=c)
+        
+        tree_hist.pack(fill=BOTH, expand=YES)
+
+        for item in historico:
+            # item = (data, acao, usuario) -> A ordem vem do SQL
+            # SQL: SELECT data_hora, acao, usuario
+            tree_hist.insert("", END, values=(item[0], item[2], item[1]))
+
     def atualizar(self):
-        # Validação para Concluir
         novo_status = self.cbo_status.get()
         laudo = self.txt_laudo.get("1.0", END).strip()
         
         if novo_status == "Concluído" and len(laudo) < 5:
-            Messagebox.show_warning("Para concluir a OS, você deve preencher o Laudo Técnico informando o que foi feito.", "Laudo Obrigatório")
+            Messagebox.show_warning("Preencha o Laudo Técnico para concluir.", "Aviso")
             return
 
-        if OSModel.atualizar(
-            self.id_os,
-            self.entry_tec.get(),
-            novo_status,
-            self.entry_defeito.get(),
-            self.entry_valor.get(),
-            self.entry_obs.get(),
-            laudo
-        ):
-            Messagebox.show_info("Ordem de Serviço atualizada!", "Sucesso")
+        if OSModel.atualizar(self.id_os, self.entry_tec.get(), novo_status, self.entry_defeito.get(), 
+                             self.entry_valor.get(), self.entry_obs.get(), laudo):
+            Messagebox.show_info("OS Atualizada com sucesso!")
             self.on_confirm()
             self.destroy()
         else:

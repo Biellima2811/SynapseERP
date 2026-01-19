@@ -57,6 +57,17 @@ class DatabaseManager:
             FOREIGN KEY(cliente_id) REFERENCES clientes(id)
         );
         """
+        sql_protocolos = """
+        CREATE TABLE IF NOT EXISTS protocolos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            os_id INTEGER,
+            data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            acao TEXT,
+            usuario TEXT,
+            FOREIGN KEY(os_id) REFERENCES servicos(id)
+        ); 
+        """
+        self.executar_query(sql_protocolos)
         self.executar_query(sql_usuarios)
         self.executar_query(sql_clientes)
         self.executar_query(sql_servicos)
