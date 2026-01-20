@@ -1,11 +1,13 @@
 import bcrypt
-# CORREÇÃO: Importamos a instância 'db' criada no final do arquivo db_manager
 from database.db_manager import db 
 
 class SecurityAuth:
     
     @staticmethod
     def criar_hash_senha(senha_pura):
+        # Garante que seja string antes de codificar
+        if not isinstance(senha_pura, str):
+            senha_pura = str(senha_pura)
         bytes_senha = senha_pura.encode('utf-8')
         salt = bcrypt.gensalt()
         hash_senha = bcrypt.hashpw(bytes_senha, salt)
@@ -46,3 +48,11 @@ class SecurityAuth:
             if SecurityAuth.verificar_senha(senha, hash_salvo):
                 return True
         return False
+    
+    @staticmethod
+    def verificar_nivel(usuario):
+        # Retorna o nuvel de acesso (ex: admin, tecnico):
+        dados = db.buscar_um("select nivel from usuarios where usuario = ?", (usuario,))
+        if dados:
+            return dados[0]
+        return 'operador'

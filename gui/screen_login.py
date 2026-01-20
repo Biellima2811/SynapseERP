@@ -82,7 +82,10 @@ class LoginScreen(ttk.Frame):
         senha = self.entry_pass.get()
 
         if SecurityAuth.login(user, senha):
+            # NOVO: Busca o nível para passar adiante
+            nivel = SecurityAuth.verificar_nivel(user)
             self.destroy()
-            self.on_login_success()
+            # Passamos usuário e nível
+            self.on_login_success(user, nivel) 
         else:
             messagebox.showerror("Acesso Negado", "Credenciais incorretas.")

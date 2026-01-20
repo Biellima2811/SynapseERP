@@ -2,6 +2,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from gui.popups import AddOSPopup, EditOSPopup
 from core.os_model import OSModel
+from core.pdf_manager import PDFManager
+from ttkbootstrap.dialogs import Messagebox
 
 class OSScreen(ttk.Frame):
     def __init__(self, parent):
@@ -16,6 +18,8 @@ class OSScreen(ttk.Frame):
         
         btn_frame = ttk.Frame(cabecalho)
         btn_frame.pack(side=RIGHT)
+
+        ttk.Button(btn_frame, text='🖨️ Imprimir', bootstyle='secondary-outline', command=self.imprimir_selecionada).pack(side=LEFT, padx=5)
         ttk.Button(btn_frame, text='+ Nova OS', bootstyle='success', command=self.abrir_popup_os).pack(side=LEFT, padx=5)
 
         # Filtros
@@ -97,3 +101,21 @@ class OSScreen(ttk.Frame):
         
         # Abre o Popup de Edição
         EditOSPopup(self, on_confirm=self.carregar_dados, id_os=id_os)
+    
+    def imprimir_selecionada(self):
+        selection = self.tree.selection()
+        if not selection:
+            Messagebox.show_warning("Selecione uma OS na tabela para imprimir.")
+            return
+        
+        # Pega o ID da linha selecionada
+        item = self.tree.item(selection[0])
+        id_os = item['values'][0]
+        
+        # Busca os dados COMPLETOS no banco (igual fazemos na edição)
+        dados_completos = OSModel.buscar_por_id(id_os)
+        
+        if dados_completos:
+            PDFManager.gerar_os(dados_completos)
+        else:
+            Messagebox.show_error("Erro ao buscar dados da OS.")

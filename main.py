@@ -3,7 +3,7 @@ from ttkbootstrap.constants import *
 from tkinter import messagebox
 from core.security import SecurityAuth
 from gui.screen_login import LoginScreen
-from gui.screen_app import MainAppScreen 
+from gui.screen_app import MainAppScreen
 import os 
 from core.logger import log_info, log_erro
 
@@ -46,11 +46,12 @@ class SynapseApp(ttk.Window): # Nome da classe atualizado
             self.id_timer = None
         self.login = LoginScreen(self, on_login_success=self.iniciar_sistema)
 
-    def iniciar_sistema(self):
-        log_info("Login realizado com sucesso. Carregando Dashboard.")
+    def iniciar_sistema(self, usuario, nivel):
+        log_info(f"Login realizado: {usuario} [{nivel}]")
         self.state('zoomed')
-        self.title("SynapseERP - Painel Principal")
-        self.app = MainAppScreen(self, usuario_logado="Admin")
+        self.title(f"SynapseERP - Logado como: {usuario}")
+        # Passa os dados para a tela principal
+        self.app = MainAppScreen(self, usuario_logado=usuario, nivel_acesso=nivel)
         self.resetar_timer()
 
     def resetar_timer(self, event=None):

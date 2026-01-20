@@ -385,3 +385,72 @@ class EditOSPopup(ttk.Toplevel):
         x = (self.winfo_screenwidth() // 2) - (self.winfo_width() // 2)
         y = (self.winfo_screenheight() // 2) - (self.winfo_height() // 2)
         self.geometry(f'+{x}+{y}')
+
+class AddUserPopup(ttk.Toplevel):
+    def __init__(self, parent, on_confirm, dados_edicao=None):
+        super().__init__(parent)
+        self.on_confirm = on_confirm
+        self.dados_edicao = dados_edicao # Se vier preenchido, é edição
+        
+        titulo = "Editar Usuário" if dados_edicao else "Novo Usuário"
+        self.title(titulo)
+        self.geometry("400x350")
+        self.position_center()
+        
+        frame = ttk.Frame(self, padding=20)
+        frame.pack(fill=BOTH, expand=YES)
+        
+        # Campos
+        ttk.Label(frame, text="Nome de Usuário (Login)").pack(anchor=W)
+        self.entry_user = ttk.Entry(frame)
+        self.entry_user.pack(fill=X, pady=(5, 15))
+        
+        ttk.Label(frame, text="Nível de Acesso").pack(anchor=W)
+        # Define os níveis disponíveis no sistema
+        self.cbo_nivel = ttk.Combobox(frame, values=["admin", "gerente", "tecnico"], state="readonly")
+        self.cbo_nivel.pack(fill=X, pady=(5, 15))
+        
+        lbl_senha = "Nova Senha (deixe em branco para manter)" if dados_edicao else "Senha"
+        ttk.Label(frame, text=lbl_senha).pack(anchor=W)
+        self.entry_senha = ttk.Entry(frame, show="*")
+        self.entry_senha.pack(fill=X, pady=(5, 20))
+        
+        # Preenche se for edição
+        if dados_edicao:
+            self.entry_user.insert(0, dados_edicao[1])
+            self.cbo_nivel.set(dados_edicao[2].lower())
+            self.entry_user.configure(state="readonly") # Não deixa mudar o login
+            
+        btn_txt = "SALVAR ALTERAÇÕES" if dados_edicao else "CRIAR USUÁRIO"
+        ttk.Button(frame, text=btn_txt, bootstyle="success", command=self.salvar).pack(fill=X)
+
+    def salvar(self):
+        user = self.entry_user.get()
+        nivel = self.cbo_nivel.get()
+        senha = self.entry_senha.get()
+        
+        from core.user_model import UserModel # Import local para evitar ciclo
+        
+        if self.dados_edicao:
+            # Modo Edição
+            id_user = self.dados_edicao[0]
+            if UserModel.atualizar(id_user, user, nivel, senha if senha else None):
+                Messagebox.show_info("Usuário atualizado!")
+                self.on_confirm()
+                self.destroy()
+        else:
+            # Modo Criação
+            if not user or not senha or not nivel:
+                Messagebox.show_error("Preencha todos os campos!")
+                return
+            
+            if UserModel.salvar(user, senha, nivel):
+                Messagebox.show_info("Usuário criado!")
+                self.on_confirm()
+                self.destroy()
+
+    def position_center(self):
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() // 2) - (self.winfo_width() // 2)
+        y = (self.winfo_screenheight() // 2) - (self.winfo_height() // 2)
+        self.geometry(f'+{x}+{y}')
