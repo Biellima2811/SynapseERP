@@ -3,7 +3,8 @@ from ttkbootstrap.constants import *
 from gui.screen_dashboard import DashboardScreen
 from gui.screen_clients import ClientesScreen
 from gui.screen_os import OSScreen
-from gui.screen_users import UsersScreen # <--- Importe a nova tela
+from gui.screen_users import UsersScreen
+from gui.screen_finance import FinanceScreen
 from tkinter import messagebox
 
 class MainAppScreen(ttk.Frame):
@@ -45,6 +46,8 @@ class MainAppScreen(ttk.Frame):
         # Lista padrão
         self.criar_botao("📊  Dashboard", DashboardScreen)
         self.criar_botao("👥  Clientes", ClientesScreen)
+        if self.nivel_acesso in ['admin', 'gerente']:
+            self.criar_botao("💰  Financeiro", FinanceScreen)
         self.criar_botao("🛠️  Serviços/OS", OSScreen)
 
         # SE FOR ADMIN, MOSTRA O BOTÃO DE SEGURANÇA

@@ -3,6 +3,7 @@ from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
 from core.client_model import ClienteModel
 from core.os_model import OSModel
+from core.finance_model import FinanceModel
 import json
 import urllib.request # Para fazer a consulta na API ViaCEP
 
@@ -448,6 +449,71 @@ class AddUserPopup(ttk.Toplevel):
                 Messagebox.show_info("Usuário criado!")
                 self.on_confirm()
                 self.destroy()
+
+    def position_center(self):
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() // 2) - (self.winfo_width() // 2)
+        y = (self.winfo_screenheight() // 2) - (self.winfo_height() // 2)
+        self.geometry(f'+{x}+{y}')
+
+class AddExpensePopup(ttk.Toplevel):
+    def __init__(self, parent, on_confirm):
+        super().__init__(parent)
+        self.title("Lançar Nova Despesa")
+        self.geometry("500x450")
+        self.on_confirm = on_confirm
+        self.position_center()
+        
+        frame = ttk.Frame(self, padding=20)
+        frame.pack(fill=BOTH, expand=YES)
+        
+        ttk.Label(frame, text="Nova Saída / Pagamento", font=("Calibri", 16, "bold"), bootstyle="danger").pack(anchor=W, pady=(0,20))
+        
+        # Descrição
+        ttk.Label(frame, text="Descrição (Ex: Aluguel, Peças)").pack(anchor=W)
+        self.entry_desc = ttk.Entry(frame)
+        self.entry_desc.pack(fill=X, pady=(5, 15))
+        
+        # Categoria
+        ttk.Label(frame, text="Categoria").pack(anchor=W)
+        self.cbo_cat = ttk.Combobox(frame, values=["Custos Fixos", "Fornecedores", "Impostos", "Funcionários", "Outros"], state="readonly")
+        self.cbo_cat.pack(fill=X, pady=(5, 15))
+        
+        # Valor e Data
+        row = ttk.Frame(frame)
+        row.pack(fill=X)
+        
+        col1 = ttk.Frame(row)
+        col1.pack(side=LEFT, fill=X, expand=YES, padx=(0, 5))
+        ttk.Label(col1, text="Valor (R$)").pack(anchor=W)
+        self.entry_valor = ttk.Entry(col1)
+        self.entry_valor.pack(fill=X, pady=5)
+        
+        col2 = ttk.Frame(row)
+        col2.pack(side=LEFT, fill=X, expand=YES, padx=(5, 0))
+        ttk.Label(col2, text="Data (AAAA-MM-DD)").pack(anchor=W)
+        self.entry_data = ttk.DateEntry(col2, dateformat="%Y-%m-%d")
+        self.entry_data.pack(fill=X, pady=5)
+        
+        # Botão
+        ttk.Button(frame, text="LANÇAR SAÍDA", bootstyle="danger", command=self.salvar).pack(fill=X, pady=30)
+
+    def salvar(self):
+        desc = self.entry_desc.get()
+        cat = self.cbo_cat.get()
+        valor = self.entry_valor.get()
+        data = self.entry_data.entry.get()
+        
+        if not desc or not valor:
+            Messagebox.show_error("Preencha descrição e valor!")
+            return
+            
+        if FinanceModel.adicionar_despesa(desc, cat, valor, data, ""):
+            Messagebox.show_info("Despesa lançada!")
+            self.on_confirm()
+            self.destroy()
+        else:
+            Messagebox.show_error("Erro ao salvar.")
 
     def position_center(self):
         self.update_idletasks()
